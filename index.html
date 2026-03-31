@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Furious Cars</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="game-header">
+      <p class="eyebrow">Jogo de corrida 2D multiplayer local</p>
+      <h1>Furious Cars</h1>
+      <p class="subtitle">Escolha seu carro, pegue seu controle Nintendo e dispute a melhor corrida na tela do computador.</p>
+    </header>
+
+    <main class="screen-wrap">
+      <section id="start-screen" class="screen active">
+        <div class="card hero-card">
+          <h2>Tela de abertura</h2>
+          <p>Dois jogadores competem em uma pista 2D com obstaculos, turbo e ranking final.</p>
+          <div class="button-row">
+            <button id="go-menu-btn" class="primary-btn">Entrar no menu</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="menu-screen" class="screen">
+        <div class="card menu-card">
+          <h2>Menu principal</h2>
+          <div class="button-grid">
+            <button id="start-game-btn" class="primary-btn">Comecar jogo</button>
+            <button id="open-selection-btn" class="secondary-btn">Escolher carros</button>
+            <button id="show-ranking-btn" class="secondary-btn">Ver ranking</button>
+            <button id="exit-game-btn" class="danger-btn">Sair do jogo</button>
+          </div>
+          <div class="status-grid">
+            <div class="status-box">
+              <span>Jogador 1</span>
+              <strong id="player-one-choice">Falcao Neon</strong>
+            </div>
+            <div class="status-box">
+              <span>Jogador 2</span>
+              <strong id="player-two-choice">Tempestade GT</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="selection-screen" class="screen">
+        <div class="card selection-card">
+          <h2>Escolha dos carros</h2>
+          <p>Cada jogador precisa selecionar um carro diferente entre as 6 opcoes abaixo.</p>
+          <div class="selection-legend">
+            <div class="legend-chip legend-p1">J1</div>
+            <span>Jogador 1</span>
+            <div class="legend-chip legend-p2">J2</div>
+            <span>Jogador 2</span>
+          </div>
+          <div id="car-list" class="car-grid"></div>
+          <div class="selection-actions">
+            <button id="save-selection-btn" class="primary-btn">Salvar escolhas</button>
+            <button id="cancel-selection-btn" class="secondary-btn">Voltar</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="game-screen" class="screen">
+        <div class="hud">
+          <div class="hud-box">
+            <span>Jogador 1</span>
+            <strong id="hud-p1">0 m</strong>
+          </div>
+          <div class="hud-box">
+            <span>Tempo</span>
+            <strong id="hud-time">60 s</strong>
+          </div>
+          <div class="hud-box">
+            <span>Jogador 2</span>
+            <strong id="hud-p2">0 m</strong>
+          </div>
+        </div>
+        <canvas id="race-canvas" width="1000" height="520" aria-label="Pista de corrida 2D"></canvas>
+        <div class="controls-note">
+          <p><strong>Controles:</strong> Nintendo/controle via navegador ou teclado.</p>
+          <p>J1: <kbd>W A S D</kbd> ou controle 1. J2: <kbd>Setas</kbd> ou <kbd>I J K L</kbd> ou controle 2.</p>
+        </div>
+      </section>
+
+      <section id="end-screen" class="screen">
+        <div class="card end-card">
+          <h2 id="end-title">Fim de jogo</h2>
+          <p id="end-message">A corrida terminou.</p>
+          <div id="final-score" class="scoreboard"></div>
+          <div class="button-row">
+            <button id="play-again-btn" class="primary-btn">Jogar novamente</button>
+            <button id="back-menu-btn" class="secondary-btn">Voltar ao menu</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
