@@ -9,9 +9,14 @@
 <body>
   <div class="app-shell">
     <header class="game-header">
-      <p class="eyebrow">Jogo de corrida 2D multiplayer local</p>
-      <h1>Furious Cars</h1>
-      <p class="subtitle">Escolha seu carro, pegue seu controle Nintendo e dispute a melhor corrida na tela do computador.</p>
+      <div class="brand-lockup">
+        <img class="brand-logo" src="logo.png" alt="Logo Furious Car">
+        <div class="brand-copy">
+          <p class="eyebrow">Jogo de corrida 2D multiplayer local</p>
+          <h1>Furious Cars</h1>
+          <p class="subtitle">Escolha seu carro, pegue seu controle Nintendo e dispute a melhor corrida na tela do computador.</p>
+        </div>
+      </div>
     </header>
 
     <main class="screen-wrap">
@@ -31,6 +36,7 @@
           <div class="button-grid">
             <button id="start-game-btn" class="primary-btn">Comecar jogo</button>
             <button id="open-selection-btn" class="secondary-btn">Escolher carros</button>
+            <button id="open-settings-btn" class="secondary-btn">Configuracoes</button>
             <button id="show-ranking-btn" class="secondary-btn">Ver ranking</button>
             <button id="exit-game-btn" class="danger-btn">Sair do jogo</button>
           </div>
@@ -65,6 +71,19 @@
         </div>
       </section>
 
+      <section id="settings-screen" class="screen">
+        <div class="card settings-card">
+          <h2>Configuracoes</h2>
+          <p>Troque as teclas de cada jogador. Clique em um botao e pressione a nova tecla.</p>
+          <div id="settings-grid" class="settings-grid"></div>
+          <div class="selection-actions">
+            <button id="reset-controls-btn" class="secondary-btn">Restaurar padrao</button>
+            <button id="save-settings-btn" class="primary-btn">Salvar controles</button>
+            <button id="cancel-settings-btn" class="secondary-btn">Voltar</button>
+          </div>
+        </div>
+      </section>
+
       <section id="game-screen" class="screen">
         <div class="hud">
           <div class="hud-box">
@@ -73,7 +92,7 @@
           </div>
           <div class="hud-box">
             <span>Tempo</span>
-            <strong id="hud-time">60 s</strong>
+            <strong id="hud-time">80 s</strong>
           </div>
           <div class="hud-box">
             <span>Jogador 2</span>
@@ -82,8 +101,9 @@
         </div>
         <canvas id="race-canvas" width="1000" height="520" aria-label="Pista de corrida 2D"></canvas>
         <div class="controls-note">
+          <p id="pause-message" class="pause-message hidden">Jogo pausado. Volte para a aba para continuar.</p>
           <p><strong>Controles:</strong> Nintendo/controle via navegador ou teclado.</p>
-          <p>J1: <kbd>W A S D</kbd> ou controle 1. J2: <kbd>Setas</kbd> ou <kbd>I J K L</kbd> ou controle 2.</p>
+          <p id="controls-summary">J1: <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> ou controle 1. J2: <kbd>Setas</kbd> ou <kbd>I</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> ou controle 2.</p>
         </div>
       </section>
 

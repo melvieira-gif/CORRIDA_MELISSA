@@ -7,10 +7,23 @@ const carCatalog = [
   { id: 5, name: "Sombra Z", color: "#fb7185", speed: 4.1, handling: 0.078 }
 ];
 
+const defaultControlProfiles = [
+  { up: ["w"], left: ["a"], right: ["d"], down: ["s"] },
+  { up: ["arrowup", "i"], left: ["arrowleft", "j"], right: ["arrowright", "l"], down: ["arrowdown", "k"] }
+];
+
+const actionLabels = {
+  up: "Acelerar",
+  left: "Esquerda",
+  right: "Direita",
+  down: "Frear"
+};
+
 const screens = {
   start: document.getElementById("start-screen"),
   menu: document.getElementById("menu-screen"),
   selection: document.getElementById("selection-screen"),
+  settings: document.getElementById("settings-screen"),
   game: document.getElementById("game-screen"),
   end: document.getElementById("end-screen")
 };
@@ -24,15 +37,22 @@ const elements = {
   hudTime: document.getElementById("hud-time"),
   endTitle: document.getElementById("end-title"),
   endMessage: document.getElementById("end-message"),
-  finalScore: document.getElementById("final-score")
+  finalScore: document.getElementById("final-score"),
+  settingsGrid: document.getElementById("settings-grid"),
+  controlsSummary: document.getElementById("controls-summary"),
+  pauseMessage: document.getElementById("pause-message")
 };
 
 const buttons = {
   goMenu: document.getElementById("go-menu-btn"),
   startGame: document.getElementById("start-game-btn"),
   openSelection: document.getElementById("open-selection-btn"),
+  openSettings: document.getElementById("open-settings-btn"),
   saveSelection: document.getElementById("save-selection-btn"),
   cancelSelection: document.getElementById("cancel-selection-btn"),
+  resetControls: document.getElementById("reset-controls-btn"),
+  saveSettings: document.getElementById("save-settings-btn"),
+  cancelSettings: document.getElementById("cancel-settings-btn"),
   showRanking: document.getElementById("show-ranking-btn"),
   exitGame: document.getElementById("exit-game-btn"),
   playAgain: document.getElementById("play-again-btn"),
@@ -42,24 +62,96 @@ const buttons = {
 const canvas = document.getElementById("race-canvas");
 const ctx = canvas.getContext("2d");
 
+function cloneControls(controls) {
+  return controls.map((player) => ({
+    up: [...player.up],
+    left: [...player.left],
+    right: [...player.right],
+    down: [...player.down]
+  }));
+}
+
 const state = {
   selections: [0, 1],
   tempSelections: [0, 1],
   ranking: [],
   gameRunning: false,
+  paused: false,
   lastTime: 0,
-  countdown: 60,
+  countdown: 80,
   finishDistance: 2200,
   resultReason: "gameover",
   keys: {},
   obstacles: [],
   boosts: [],
-  players: []
+  players: [],
+  controlProfiles: cloneControls(defaultControlProfiles),
+  tempControlProfiles: cloneControls(defaultControlProfiles),
+  waitingForKey: null
 };
 
 function showScreen(name) {
   Object.values(screens).forEach((screen) => screen.classList.remove("active"));
   screens[name].classList.add("active");
+}
+
+function normalizeKey(key) {
+  return typeof key === "string" ? key.toLowerCase() : "";
+}
+
+function formatKey(key) {
+  const map = {
+    arrowup: "Seta cima",
+    arrowdown: "Seta baixo",
+    arrowleft: "Seta esquerda",
+    arrowright: "Seta direita",
+    " ": "Espaco"
+  };
+  return map[key] || key.toUpperCase();
+}
+
+function formatActionKeys(keys) {
+  return keys.map((key) => `<kbd>${formatKey(key)}</kbd>`).join(" / ");
+}
+
+function buildControlKeySet() {
+  const keys = new Set();
+  state.controlProfiles.forEach((profile) => {
+    Object.values(profile).flat().forEach((key) => keys.add(key));
+  });
+  if (state.waitingForKey) {
+    Object.values(state.tempControlProfiles[state.waitingForKey.playerIndex]).flat().forEach((key) => keys.add(key));
+  }
+  return keys;
+}
+
+function renderControlsSummary() {
+  const p1 = state.controlProfiles[0];
+  const p2 = state.controlProfiles[1];
+  elements.controlsSummary.innerHTML = `J1: ${formatActionKeys(p1.up)} ${formatActionKeys(p1.left)} ${formatActionKeys(p1.down)} ${formatActionKeys(p1.right)} ou controle 1. J2: ${formatActionKeys(p2.up)} ${formatActionKeys(p2.left)} ${formatActionKeys(p2.down)} ${formatActionKeys(p2.right)} ou controle 2.`;
+}
+
+function renderSettings() {
+  elements.settingsGrid.innerHTML = "";
+
+  state.tempControlProfiles.forEach((profile, playerIndex) => {
+    const card = document.createElement("article");
+    card.className = "settings-panel";
+    card.innerHTML = `
+      <h3>Jogador ${playerIndex + 1}</h3>
+      <div class="settings-actions">
+        ${Object.entries(actionLabels).map(([action, label]) => `
+          <div class="setting-row">
+            <span>${label}</span>
+            <button type="button" class="keybind-btn${state.waitingForKey?.playerIndex === playerIndex && state.waitingForKey?.action === action ? " listening" : ""}" data-player="${playerIndex}" data-action="${action}">
+              ${state.waitingForKey?.playerIndex === playerIndex && state.waitingForKey?.action === action ? "Pressione..." : profile[action].map(formatKey).join(" / ")}
+            </button>
+          </div>
+        `).join("")}
+      </div>
+    `;
+    elements.settingsGrid.appendChild(card);
+  });
 }
 
 function renderCarSelection() {
@@ -77,7 +169,6 @@ function renderCarSelection() {
         <button type="button" class="player-two-btn" data-player="1" data-car="${car.id}">Escolher J2</button>
       </div>
     `;
-
     elements.carList.appendChild(card);
   });
 
@@ -103,18 +194,8 @@ function randomBetween(min, max) {
 }
 
 function createRaceEntities() {
-  state.obstacles = Array.from({ length: 14 }, (_, index) => ({
-    laneX: randomBetween(180, canvas.width - 180),
-    y: -index * 180 - 140,
-    width: 70,
-    height: 120
-  }));
-
-  state.boosts = Array.from({ length: 9 }, (_, index) => ({
-    laneX: randomBetween(160, canvas.width - 160),
-    y: -index * 260 - 260,
-    radius: 18
-  }));
+  state.obstacles = [];
+  state.boosts = [];
 }
 
 function createPlayer(selectionIndex, x, controls, gamepadSlot, label) {
@@ -138,21 +219,17 @@ function createPlayer(selectionIndex, x, controls, gamepadSlot, label) {
 }
 
 function keyPressed(controls, action) {
-  const keys = Array.isArray(controls[action]) ? controls[action] : [controls[action]];
-  return keys.some((key) => state.keys[key]);
+  return controls[action].some((key) => state.keys[key]);
 }
 
 function resetGame() {
-  state.countdown = 60;
+  state.countdown = 80;
   state.resultReason = "gameover";
+  state.paused = false;
+  elements.pauseMessage.classList.add("hidden");
   state.players = [
-    createPlayer(0, canvas.width * 0.35, { up: "w", left: "a", right: "d", down: "s" }, 0, "Jogador 1"),
-    createPlayer(1, canvas.width * 0.65, {
-      up: ["ArrowUp", "i"],
-      left: ["ArrowLeft", "j"],
-      right: ["ArrowRight", "l"],
-      down: ["ArrowDown", "k"]
-    }, 1, "Jogador 2")
+    createPlayer(0, canvas.width * 0.35, cloneControls([state.controlProfiles[0]])[0], 0, "Jogador 1"),
+    createPlayer(1, canvas.width * 0.65, cloneControls([state.controlProfiles[1]])[0], 1, "Jogador 2")
   ];
   createRaceEntities();
   updateHud();
@@ -161,12 +238,14 @@ function resetGame() {
 function updateHud() {
   elements.hudP1.textContent = `${Math.floor(state.players[0]?.distance || 0)} m`;
   elements.hudP2.textContent = `${Math.floor(state.players[1]?.distance || 0)} m`;
-  elements.hudTime.textContent = `${Math.ceil(state.countdown)} s`;
+  elements.hudTime.textContent = state.paused ? "Pausado" : `${Math.ceil(state.countdown)} s`;
 }
 
 function getGamepadState(slot) {
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-  return pads[slot] || null;
+  const pad = pads[slot] || null;
+  if (!pad || !pad.connected) return null;
+  return pad;
 }
 
 function readHorizontalInput(player) {
@@ -177,7 +256,7 @@ function readHorizontalInput(player) {
   const gamepad = getGamepadState(player.gamepadSlot);
   if (gamepad) {
     const axis = gamepad.axes[0] || 0;
-    if (Math.abs(axis) > 0.2) {
+    if (Math.abs(axis) > 0.35) {
       direction = axis;
     }
     if (gamepad.buttons[14]?.pressed) direction = -1;
@@ -218,15 +297,16 @@ function updatePlayers(delta) {
     const horizontalInput = readHorizontalInput(player);
     const accel = isAccelerating(player);
     const braking = isBraking(player);
+    const frameFactor = delta * 60;
 
     if (accel) {
-      player.speed += 0.085;
+      player.speed += 0.045 * frameFactor;
     } else {
-      player.speed -= 0.06;
+      player.speed -= 0.025 * frameFactor;
     }
 
     if (braking) {
-      player.speed -= 0.12;
+      player.speed -= 0.06 * frameFactor;
     }
 
     if (player.turboTimer > 0) {
@@ -235,57 +315,15 @@ function updatePlayers(delta) {
 
     const currentTopSpeed = player.topSpeed + (player.turboTimer > 0 ? 1.1 : 0);
     player.speed = Math.max(0, Math.min(player.speed, currentTopSpeed));
-    player.x += horizontalInput * (10 + player.speed * 2.5) * player.handling;
+    player.x += horizontalInput * (5 + player.speed * 1.8) * player.handling * frameFactor;
     player.x = Math.max(110, Math.min(canvas.width - 110, player.x));
 
-    player.distance += player.speed * 4.5;
+    player.distance += player.speed * 3.3 * frameFactor;
     player.y = canvas.height - 110 - player.speed * 2;
   });
 }
 
 function updateTrack(delta) {
-  const averageSpeed = (state.players[0].speed + state.players[1].speed) / 2;
-  const moveY = averageSpeed * 7 + 3;
-
-  state.obstacles.forEach((obstacle) => {
-    obstacle.y += moveY;
-    if (obstacle.y > canvas.height + 80) {
-      obstacle.y = randomBetween(-520, -100);
-      obstacle.laneX = randomBetween(180, canvas.width - 180);
-    }
-
-    state.players.forEach((player) => {
-      const hitbox = { x: player.x - player.width / 2, y: player.y, width: player.width, height: player.height };
-      const block = { x: obstacle.laneX - obstacle.width / 2, y: obstacle.y, width: obstacle.width, height: obstacle.height };
-
-      if (overlaps(hitbox, block)) {
-        player.speed = Math.max(0.9, player.speed * 0.55);
-        player.distance = Math.max(0, player.distance - 6);
-        obstacle.y = canvas.height + 120;
-      }
-    });
-  });
-
-  state.boosts.forEach((boost) => {
-    boost.y += moveY + 1.5;
-    if (boost.y > canvas.height + 40) {
-      boost.y = randomBetween(-800, -120);
-      boost.laneX = randomBetween(160, canvas.width - 160);
-    }
-
-    state.players.forEach((player) => {
-      const cx = player.x;
-      const cy = player.y + player.height / 2;
-      const dist = Math.hypot(cx - boost.laneX, cy - boost.y);
-
-      if (dist < boost.radius + 30) {
-        player.turboTimer = 2.2;
-        player.distance += 24;
-        boost.y = canvas.height + 60;
-      }
-    });
-  });
-
   state.countdown -= delta;
 }
 
@@ -340,22 +378,10 @@ function drawBackground() {
 }
 
 function drawTrackObjects() {
-  state.obstacles.forEach((obstacle) => {
-    ctx.fillStyle = "#94a3b8";
-    ctx.fillRect(obstacle.laneX - obstacle.width / 2, obstacle.y, obstacle.width, obstacle.height);
-    ctx.fillStyle = "#ef4444";
-    ctx.fillRect(obstacle.laneX - obstacle.width / 2, obstacle.y + 18, obstacle.width, 14);
-  });
-
-  state.boosts.forEach((boost) => {
-    ctx.beginPath();
-    ctx.fillStyle = "#22d3ee";
-    ctx.arc(boost.laneX, boost.y, boost.radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "white";
-    ctx.font = "bold 16px Chakra Petch";
-    ctx.fillText("T", boost.laneX - 5, boost.y + 6);
-  });
+  ctx.fillStyle = "rgba(247, 240, 214, 0.12)";
+  for (let y = 0; y < canvas.height; y += 52) {
+    ctx.fillRect(canvas.width / 2 - 8, y, 16, 28);
+  }
 }
 
 function drawCar(player) {
@@ -363,14 +389,10 @@ function drawCar(player) {
   const y = player.y;
 
   ctx.fillStyle = player.color;
-  ctx.beginPath();
-  ctx.roundRect(x, y, player.width, player.height, 18);
-  ctx.fill();
+  ctx.fillRect(x, y, player.width, player.height);
 
   ctx.fillStyle = "rgba(255,255,255,0.9)";
-  ctx.beginPath();
-  ctx.roundRect(x + 10, y + 12, player.width - 20, 28, 12);
-  ctx.fill();
+  ctx.fillRect(x + 10, y + 12, player.width - 20, 28);
 
   ctx.fillStyle = "#111827";
   ctx.fillRect(x + 8, y + 74, 12, 18);
@@ -380,16 +402,11 @@ function drawCar(player) {
 
   if (player.turboTimer > 0) {
     ctx.fillStyle = "#fbbf24";
-    ctx.beginPath();
-    ctx.moveTo(x + player.width / 2, y + player.height + 18);
-    ctx.lineTo(x + 16, y + player.height - 4);
-    ctx.lineTo(x + player.width - 16, y + player.height - 4);
-    ctx.closePath();
-    ctx.fill();
+    ctx.fillRect(x + 18, y + player.height, player.width - 36, 12);
   }
 
   ctx.fillStyle = "white";
-  ctx.font = "bold 18px Chakra Petch";
+  ctx.font = "bold 18px monospace";
   ctx.fillText(player.label, x - 8, y - 10);
 }
 
@@ -397,7 +414,7 @@ function drawFinishProgress() {
   ctx.fillStyle = "rgba(15, 23, 42, 0.72)";
   ctx.fillRect(18, 18, 220, 82);
   ctx.fillStyle = "white";
-  ctx.font = "bold 18px Chakra Petch";
+  ctx.font = "bold 18px monospace";
   ctx.fillText("Meta: 2200 m", 32, 42);
 
   state.players.forEach((player, index) => {
@@ -419,6 +436,14 @@ function renderRace() {
 function gameLoop(timestamp) {
   if (!state.gameRunning) return;
 
+  if (state.paused) {
+    state.lastTime = timestamp;
+    updateHud();
+    renderRace();
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
   if (!state.lastTime) {
     state.lastTime = timestamp;
   }
@@ -439,7 +464,9 @@ function gameLoop(timestamp) {
 
 function finishGame() {
   state.gameRunning = false;
+  state.paused = false;
   state.lastTime = 0;
+  elements.pauseMessage.classList.add("hidden");
 
   const sorted = [...state.players].sort((a, b) => b.distance - a.distance);
   state.ranking = sorted.map((player, index) => ({
@@ -484,6 +511,60 @@ function startGame() {
   requestAnimationFrame(gameLoop);
 }
 
+function openSettings() {
+  state.tempControlProfiles = cloneControls(state.controlProfiles);
+  state.waitingForKey = null;
+  renderSettings();
+  showScreen("settings");
+}
+
+function handleRemapKey(key) {
+  if (!state.waitingForKey) return false;
+
+  const normalizedKey = normalizeKey(key);
+  if (!normalizedKey || normalizedKey === "escape" || normalizedKey === "tab") {
+    state.waitingForKey = null;
+    renderSettings();
+    return true;
+  }
+
+  const { playerIndex, action } = state.waitingForKey;
+  const otherAction = action === "up" || action === "down" ? ["left", "right"] : ["up", "down"];
+  const profile = state.tempControlProfiles[playerIndex];
+
+  Object.keys(profile).forEach((currentAction) => {
+    profile[currentAction] = profile[currentAction].filter((storedKey) => storedKey !== normalizedKey);
+  });
+
+  profile[action] = [normalizedKey];
+
+  if (playerIndex === 1) {
+    if (action === "up" && !profile.up.includes("i")) profile.up = [normalizedKey, "i"].filter((value, idx, arr) => arr.indexOf(value) === idx);
+    if (action === "left" && !profile.left.includes("j")) profile.left = [normalizedKey, "j"].filter((value, idx, arr) => arr.indexOf(value) === idx);
+    if (action === "down" && !profile.down.includes("k")) profile.down = [normalizedKey, "k"].filter((value, idx, arr) => arr.indexOf(value) === idx);
+    if (action === "right" && !profile.right.includes("l")) profile.right = [normalizedKey, "l"].filter((value, idx, arr) => arr.indexOf(value) === idx);
+  }
+
+  if (playerIndex === 0 && otherAction.length) {
+    otherAction.forEach((currentAction) => {
+      if (profile[currentAction].length === 0) {
+        profile[currentAction] = [...defaultControlProfiles[playerIndex][currentAction]];
+      }
+    });
+  }
+
+  state.waitingForKey = null;
+  renderSettings();
+  return true;
+}
+
+function setPauseState(shouldPause) {
+  if (!state.gameRunning) return;
+  state.paused = shouldPause;
+  elements.pauseMessage.classList.toggle("hidden", !shouldPause);
+  updateHud();
+}
+
 function bindEvents() {
   buttons.goMenu.addEventListener("click", () => showScreen("menu"));
   buttons.openSelection.addEventListener("click", () => {
@@ -491,6 +572,7 @@ function bindEvents() {
     updateSelectionButtons();
     showScreen("selection");
   });
+  buttons.openSettings.addEventListener("click", openSettings);
   buttons.cancelSelection.addEventListener("click", () => showScreen("menu"));
   buttons.saveSelection.addEventListener("click", () => {
     if (state.tempSelections[0] === state.tempSelections[1]) {
@@ -501,6 +583,25 @@ function bindEvents() {
     updateChoiceLabels();
     showScreen("menu");
   });
+
+  buttons.resetControls.addEventListener("click", () => {
+    state.tempControlProfiles = cloneControls(defaultControlProfiles);
+    state.waitingForKey = null;
+    renderSettings();
+  });
+
+  buttons.saveSettings.addEventListener("click", () => {
+    state.controlProfiles = cloneControls(state.tempControlProfiles);
+    state.waitingForKey = null;
+    renderControlsSummary();
+    showScreen("menu");
+  });
+
+  buttons.cancelSettings.addEventListener("click", () => {
+    state.waitingForKey = null;
+    showScreen("menu");
+  });
+
   buttons.startGame.addEventListener("click", startGame);
   buttons.playAgain.addEventListener("click", startGame);
   buttons.backMenu.addEventListener("click", () => showScreen("menu"));
@@ -512,6 +613,7 @@ function bindEvents() {
   });
   buttons.exitGame.addEventListener("click", () => {
     state.gameRunning = false;
+    state.paused = false;
     elements.endTitle.textContent = "Jogo encerrado";
     elements.endMessage.textContent = "Voce saiu do jogo. Use o menu para voltar quando quiser.";
     renderRanking();
@@ -533,16 +635,60 @@ function bindEvents() {
     updateSelectionButtons();
   });
 
+  elements.settingsGrid.addEventListener("click", (event) => {
+    const button = event.target.closest(".keybind-btn");
+    if (!button) return;
+
+    state.waitingForKey = {
+      playerIndex: Number(button.dataset.player),
+      action: button.dataset.action
+    };
+    renderSettings();
+  });
+
   window.addEventListener("keydown", (event) => {
-    state.keys[event.key] = true;
+    const key = normalizeKey(event.key);
+
+    if (handleRemapKey(key)) {
+      event.preventDefault();
+      return;
+    }
+
+    state.keys[key] = true;
+    if (buildControlKeySet().has(key)) {
+      event.preventDefault();
+    }
   });
 
   window.addEventListener("keyup", (event) => {
-    state.keys[event.key] = false;
+    const key = normalizeKey(event.key);
+    state.keys[key] = false;
+    if (buildControlKeySet().has(key)) {
+      event.preventDefault();
+    }
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      setPauseState(true);
+    } else if (state.gameRunning) {
+      setPauseState(false);
+      state.lastTime = 0;
+    }
+  });
+
+  window.addEventListener("blur", () => setPauseState(true));
+  window.addEventListener("focus", () => {
+    if (state.gameRunning) {
+      setPauseState(false);
+      state.lastTime = 0;
+    }
   });
 }
 
 renderCarSelection();
+renderSettings();
+renderControlsSummary();
 updateChoiceLabels();
 bindEvents();
 showScreen("start");

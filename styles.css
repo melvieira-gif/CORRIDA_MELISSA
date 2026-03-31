@@ -1,14 +1,17 @@
 :root {
-  --bg: #09111f;
-  --bg-soft: #12233d;
-  --panel: rgba(9, 17, 31, 0.84);
-  --line: rgba(166, 224, 255, 0.22);
-  --text: #f4f7fb;
-  --muted: #a8bbd4;
-  --accent: #ff7b00;
-  --accent-2: #00d4b3;
-  --danger: #ef4444;
-  --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  --bg: #003049;
+  --bg-soft: #669bbc;
+  --panel: rgba(0, 48, 73, 0.9);
+  --panel-soft: rgba(102, 155, 188, 0.18);
+  --line: rgba(174, 31, 35, 0.35);
+  --text: #aef123;
+  --text-dark: #f7f0d6;
+  --muted: #669bbc;
+  --accent: #c1121f;
+  --accent-2: #780000;
+  --sand: #f7f0d6;
+  --danger: #780000;
+  --shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
 }
 
 * {
@@ -18,11 +21,11 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-  color: var(--text);
+  font-family: "Lucida Console", "Courier New", monospace;
+  color: var(--text-dark);
   background:
-    radial-gradient(circle at top, rgba(255, 123, 0, 0.15), transparent 24%),
-    linear-gradient(160deg, #050913 0%, #09111f 45%, #132746 100%);
+    radial-gradient(circle at top, rgba(193, 18, 31, 0.18), transparent 26%),
+    linear-gradient(160deg, #003049 0%, #780000 50%, #c1121f 100%);
 }
 
 .app-shell {
@@ -35,30 +38,59 @@ body {
   margin: 0 auto 24px;
 }
 
+.brand-lockup {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 18px;
+}
+
+.brand-copy {
+  min-width: 0;
+}
+
+.brand-logo {
+  display: block;
+  width: clamp(62px, 9vw, 84px);
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(6px 6px 0 rgba(0, 0, 0, 0.28));
+  border: 3px solid var(--sand);
+  background: rgba(247, 240, 214, 0.08);
+  padding: 6px;
+}
+
 .eyebrow {
   margin: 0 0 12px;
   text-transform: uppercase;
   letter-spacing: 0.24em;
-  color: var(--accent-2);
+  color: var(--sand);
   font-size: 0.82rem;
 }
 
 h1,
 h2 {
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-family: Impact, Haettenschweiler, "Arial Black", "Franklin Gothic Heavy", sans-serif;
   margin: 0;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+  text-shadow: 3px 3px 0 rgba(120, 0, 0, 0.88);
 }
 
 h1 {
-  font-size: clamp(2.6rem, 6vw, 4.8rem);
+  font-size: clamp(2.1rem, 5vw, 4.2rem);
+  line-height: 0.95;
 }
 
 .subtitle {
   max-width: 780px;
-  margin: 14px 0 0;
-  color: var(--muted);
-  font-size: 1.05rem;
+  margin: 12px 0 0;
+  color: var(--sand);
+  font-size: 0.98rem;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
 }
 
 .screen-wrap {
@@ -79,14 +111,13 @@ h1 {
 #race-canvas,
 .hud,
 .controls-note {
-  border: 1px solid var(--line);
+  border: 3px solid var(--accent-2);
   background: var(--panel);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(12px);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.34);
 }
 
 .card {
-  border-radius: 28px;
+  border-radius: 0;
   padding: 28px;
 }
 
@@ -120,32 +151,36 @@ h1 {
 
 button {
   border: none;
-  border-radius: 999px;
-  padding: 14px 20px;
+  border-radius: 0;
+  padding: 13px 18px;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.18s ease, filter 0.18s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
 }
 
 button:hover {
-  transform: translateY(-2px);
+  transform: translate(-1px, -1px);
   filter: brightness(1.08);
 }
 
 .primary-btn {
-  background: linear-gradient(90deg, var(--accent), #ffb100);
-  color: #111827;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: var(--sand);
 }
 
 .secondary-btn {
-  background: rgba(168, 187, 212, 0.12);
-  color: var(--text);
+  background: rgba(102, 155, 188, 0.18);
+  color: var(--sand);
+  border: 1px solid rgba(247, 240, 214, 0.2);
 }
 
 .danger-btn {
-  background: linear-gradient(90deg, #ff5a5a, #ff2e88);
-  color: white;
+  background: linear-gradient(90deg, #780000, #c1121f);
+  color: var(--sand);
 }
 
 .status-grid {
@@ -158,23 +193,27 @@ button:hover {
 .status-box,
 .hud-box,
 .score-item {
-  border-radius: 20px;
+  border-radius: 0;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--panel-soft);
+  border: 2px solid rgba(247, 240, 214, 0.18);
 }
 
 .status-box span,
 .hud-box span {
   display: block;
-  color: var(--muted);
+  color: var(--sand);
   margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
 }
 
 .status-box strong,
 .hud-box strong,
 .score-item strong {
   font-size: 1.1rem;
+  color: var(--text);
 }
 
 .car-grid {
@@ -185,30 +224,35 @@ button:hover {
 }
 
 .car-card {
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 0;
+  border: 2px solid rgba(247, 240, 214, 0.18);
   padding: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(102, 155, 188, 0.12);
   display: grid;
   gap: 10px;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.25);
 }
 
 .car-preview {
   width: 100%;
   height: 68px;
-  border-radius: 18px;
+  border-radius: 0;
   position: relative;
   overflow: hidden;
+  border: 2px solid rgba(247, 240, 214, 0.2);
 }
 
 .car-card h3 {
   margin: 0;
   font-size: 1.05rem;
+  color: var(--sand);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .car-spec {
   margin: 0;
-  color: var(--muted);
+  color: var(--sand);
   font-size: 0.92rem;
   line-height: 1.35;
 }
@@ -245,11 +289,11 @@ button:hover {
 
 .selector-group button {
   min-width: 0;
-  border-radius: 14px;
+  border-radius: 0;
   padding: 9px 8px;
   font-size: 0.88rem;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text);
+  background: rgba(247, 240, 214, 0.1);
+  color: var(--sand);
 }
 
 .selector-group button.active {
@@ -262,13 +306,13 @@ button:hover {
 }
 
 .selector-group .player-one-btn.active {
-  background: linear-gradient(90deg, #0ea5e9, #38bdf8);
-  color: #082032;
+  background: linear-gradient(90deg, #669bbc, #aef123);
+  color: #003049;
 }
 
 .selector-group .player-two-btn.active {
-  background: linear-gradient(90deg, #f97316, #facc15);
-  color: #1f1300;
+  background: linear-gradient(90deg, #c1121f, #780000);
+  color: var(--sand);
 }
 
 .selection-legend {
@@ -277,12 +321,14 @@ button:hover {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 14px;
-  color: var(--muted);
+  color: var(--sand);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .legend-chip {
   min-width: 34px;
-  border-radius: 999px;
+  border-radius: 0;
   padding: 4px 10px;
   text-align: center;
   font-weight: 700;
@@ -290,18 +336,19 @@ button:hover {
 }
 
 .legend-p1 {
-  background: #38bdf8;
+  background: #669bbc;
 }
 
 .legend-p2 {
-  background: #f59e0b;
+  background: #c1121f;
+  color: var(--sand);
 }
 
 .hud {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
-  border-radius: 24px;
+  border-radius: 0;
   padding: 16px;
   margin-bottom: 18px;
 }
@@ -309,22 +356,24 @@ button:hover {
 #race-canvas {
   width: 100%;
   height: auto;
-  border-radius: 28px;
+  border-radius: 0;
+  image-rendering: pixelated;
 }
 
 .controls-note {
   margin-top: 18px;
-  border-radius: 24px;
+  border-radius: 0;
   padding: 16px 18px;
-  color: var(--muted);
+  color: var(--sand);
 }
 
 kbd {
   font-family: inherit;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 2px 8px;
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
+  background: rgba(247, 240, 214, 0.12);
+  color: var(--text);
+  border: 1px solid rgba(247, 240, 214, 0.16);
 }
 
 .scoreboard {
@@ -336,6 +385,7 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  color: var(--sand);
 }
 
 @keyframes rise {
@@ -353,6 +403,11 @@ kbd {
 @media (max-width: 720px) {
   .app-shell {
     padding-inline: 14px;
+  }
+
+  .brand-lockup {
+    grid-template-columns: 1fr;
+    align-items: start;
   }
 
   .card {
